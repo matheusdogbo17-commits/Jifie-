@@ -1,0 +1,6 @@
+{
+  "name": "Messagerie",
+  "description": "Application de messagerie instantanée moderne et fluide avec conversations, contacts, recherche et messages en temps réel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
