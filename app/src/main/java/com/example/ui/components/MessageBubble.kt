@@ -214,6 +214,35 @@ fun MessageBubble(
                                 }
                             }
                         }
+                        MessageType.STICKER -> {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                val parts = message.text.split(" ", limit = 2)
+                                val emoji = parts.firstOrNull() ?: "⭐"
+                                val label = if (parts.size > 1) parts[1] else ""
+                                Text(
+                                    text = emoji,
+                                    fontSize = 52.sp
+                                )
+                                if (label.isNotBlank()) {
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = if (isMe) Color.White.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer,
+                                        modifier = Modifier.padding(top = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = label,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = if (isMe) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(2.dp))

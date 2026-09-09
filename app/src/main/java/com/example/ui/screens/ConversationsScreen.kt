@@ -64,7 +64,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.Contact
 import com.example.data.model.Conversation
+import com.example.data.model.UserStoryGroup
 import com.example.ui.components.AvatarBadge
+import com.example.ui.components.StoriesRow
 import com.example.ui.viewmodel.ConversationFilter
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -76,6 +78,7 @@ import java.util.Locale
 fun ConversationsScreen(
     conversations: List<Conversation>,
     contacts: List<Contact>,
+    storyGroups: List<UserStoryGroup> = emptyList(),
     searchQuery: String,
     selectedFilter: ConversationFilter,
     onSearchQueryChanged: (String) -> Unit,
@@ -83,6 +86,8 @@ fun ConversationsScreen(
     onConversationClick: (String) -> Unit,
     onStartNewChat: () -> Unit,
     onContactQuickClick: (Contact) -> Unit,
+    onStoryClick: (UserStoryGroup) -> Unit = {},
+    onCreateStoryClick: () -> Unit = {},
     onTogglePin: (Conversation) -> Unit,
     onDeleteConversation: (String) -> Unit,
     onToggleFloatingBubble: () -> Unit,
@@ -150,6 +155,14 @@ fun ConversationsScreen(
                                 .testTag("search_text_field")
                         )
                     } else {
+                        // Quick Story Creator button
+                        IconButton(
+                            onClick = onCreateStoryClick,
+                            modifier = Modifier.testTag("create_story_top_button")
+                        ) {
+                            Text(text = "📸", fontSize = 18.sp)
+                        }
+
                         // Quick toggle for the floating chat bubble
                         IconButton(
                             onClick = onToggleFloatingBubble,
@@ -198,6 +211,14 @@ fun ConversationsScreen(
                 .padding(innerPadding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
+            // Instagram-style Stories section at the top of the conversation list
+            if (!isSearchExpanded && storyGroups.isNotEmpty()) {
+                StoriesRow(
+                    storyGroups = storyGroups,
+                    onStoryClick = onStoryClick,
+                    onCreateStoryClick = onCreateStoryClick
+                )
+            }
             // Horizontal rail of contacts for quick access
             if (!isSearchExpanded && contacts.isNotEmpty()) {
                 Text(

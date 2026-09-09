@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
@@ -53,6 +54,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -74,6 +77,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.Conversation
 import com.example.data.model.Message
+import com.example.data.model.StickerItem
 import com.example.ui.screens.TypingBubble
 import com.example.ui.theme.OnlineGreen
 import kotlin.math.roundToInt
@@ -88,6 +92,7 @@ fun FloatingChatBubbleHost(
     inputText: String,
     onInputTextChanged: (String) -> Unit,
     onSendMessage: () -> Unit,
+    onSendSticker: (StickerItem) -> Unit = {},
     onToggleExpanded: () -> Unit,
     onCloseBubble: () -> Unit,
     onOpenFullScreen: (String) -> Unit,
@@ -121,13 +126,14 @@ fun FloatingChatBubbleHost(
                 inputText = inputText,
                 onInputTextChanged = onInputTextChanged,
                 onSendMessage = onSendMessage,
+                onSendSticker = onSendSticker,
                 onMinimize = onToggleExpanded,
                 onClose = onCloseBubble,
                 onOpenFullScreen = { onOpenFullScreen(conversation.id) },
                 onSwitchConversation = onSwitchConversation,
                 modifier = Modifier
                     .widthIn(max = 360.dp)
-                    .heightIn(max = 520.dp)
+                    .heightIn(max = 540.dp)
                     .padding(16.dp)
                     .testTag("floating_chat_window")
             )
@@ -222,6 +228,7 @@ fun FloatingChatWindow(
     inputText: String,
     onInputTextChanged: (String) -> Unit,
     onSendMessage: () -> Unit,
+    onSendSticker: (StickerItem) -> Unit = {},
     onMinimize: () -> Unit,
     onClose: () -> Unit,
     onOpenFullScreen: () -> Unit,
@@ -229,10 +236,21 @@ fun FloatingChatWindow(
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
+    var isSearchingInBubble by remember { mutableStateOf(false) }
+    var bubbleSearchQuery by remember { mutableStateOf("") }
+    var showStickersInBubble by remember { mutableStateOf(false) }
 
-    LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.size - 1)
+    val displayedMessages = remember(messages, bubbleSearchQuery) {
+        if (bubbleSearchQuery.isBlank()) {
+            messages
+        } else {
+            messages.filter { it.text.contains(bubbleSearchQuery, ignoreCase = true) }
+        }
+    }
+
+    LaunchedEffect(displayedMessages.size) {
+        if (displayedMessages.isNotEmpty()) {
+            listState.animateScrollToItem(displayedMessages.size - 1)
         }
     }
 
@@ -287,6 +305,22 @@ fun FloatingChatWindow(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    // WhatsApp-style Search button in header
+                    IconButton(
+                        onClick = {
+                            isSearchingInBubble = !isSearchingInBubble
+                            if (!isSearchingInBubble) bubbleSearchQuery = ""
+                        },
+                        modifier = Modifier.size(32.dp).testTag("bubble_search_toggle")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Rechercher dans la bulle",
+                            tint = if (isSearchingInBubble) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
                     // Open in full screen
                     IconButton(
                         onClick = onOpenFullScreen,
@@ -324,6 +358,65 @@ fun FloatingChatWindow(
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(18.dp)
                         )
+                    }
+                }
+            }
+
+            // WhatsApp-style Search Bar inside the bubble
+            if (isSearchingInBubble) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        TextField(
+                            value = bubbleSearchQuery,
+                            onValueChange = { bubbleSearchQuery = it },
+                            placeholder = { Text("Rechercher dans la discussion...", fontSize = 12.sp) },
+                            singleLine = true,
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent
+                            ),
+                            modifier = Modifier
+                                .weight(1f)
+                                .heightIn(max = 38.dp)
+                                .testTag("bubble_search_input")
+                        )
+                        if (bubbleSearchQuery.isNotBlank()) {
+                            Text(
+                                text = "${displayedMessages.size} résultat(s)",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(end = 4.dp)
+                            )
+                            IconButton(
+                                onClick = { bubbleSearchQuery = "" },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Effacer",
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -368,7 +461,7 @@ fun FloatingChatWindow(
                     .background(MaterialTheme.colorScheme.background)
                     .testTag("bubble_messages_list")
             ) {
-                items(messages, key = { it.id }) { msg ->
+                items(displayedMessages, key = { it.id }) { msg ->
                     MessageBubble(
                         message = msg,
                         onReactionSelected = { /* quick reaction */ },
@@ -380,6 +473,18 @@ fun FloatingChatWindow(
                         TypingBubble(contactName = conversation.participantName)
                     }
                 }
+            }
+
+            // WhatsApp Sticker Picker Drawer in Bubble
+            if (showStickersInBubble) {
+                StickerPickerSheet(
+                    onStickerSelected = { sticker ->
+                        onSendSticker(sticker)
+                        showStickersInBubble = false
+                    },
+                    onClose = { showStickersInBubble = false },
+                    modifier = Modifier.heightIn(max = 260.dp)
+                )
             }
 
             // Input Row in bubble
@@ -394,6 +499,18 @@ fun FloatingChatWindow(
                         .padding(horizontal = 8.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // WhatsApp-style Sticker button
+                    IconButton(
+                        onClick = { showStickersInBubble = !showStickersInBubble },
+                        modifier = Modifier
+                            .size(36.dp)
+                            .testTag("bubble_sticker_button")
+                    ) {
+                        Text(text = "🎨", fontSize = 18.sp)
+                    }
+
+                    Spacer(modifier = Modifier.width(4.dp))
+
                     OutlinedTextField(
                         value = inputText,
                         onValueChange = onInputTextChanged,

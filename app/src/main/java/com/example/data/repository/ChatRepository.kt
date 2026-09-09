@@ -255,6 +255,7 @@ class ChatRepository(
             MessageType.TEXT -> text
             MessageType.AUDIO -> "Message vocal ($audioDurationSec s)"
             MessageType.IMAGE -> "Photo"
+            MessageType.STICKER -> "Sticker $text"
         }
         conversationDao.updateLastMessage(conversationId, preview, now)
 

@@ -18,7 +18,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.components.CallOverlay
+import com.example.ui.components.CreateStoryDialog
 import com.example.ui.components.FloatingChatBubbleHost
+import com.example.ui.components.StoryViewerDialog
 import com.example.ui.screens.ChatDetailScreen
 import com.example.ui.screens.ConversationsScreen
 import com.example.ui.screens.NewChatBottomSheet
@@ -57,6 +59,11 @@ fun ChatApp(chatViewModel: ChatViewModel = viewModel()) {
   val activeCall by chatViewModel.activeCall.collectAsStateWithLifecycle()
   val showNewChatDialog by chatViewModel.showNewChatDialog.collectAsStateWithLifecycle()
   val contacts by chatViewModel.availableContacts.collectAsStateWithLifecycle()
+
+  // Instagram-like Stories states
+  val userStories by chatViewModel.userStories.collectAsStateWithLifecycle()
+  val activeStoryGroup by chatViewModel.activeStoryGroup.collectAsStateWithLifecycle()
+  val showCreateStoryDialog by chatViewModel.showCreateStoryDialog.collectAsStateWithLifecycle()
 
   // Floating chat bubble states
   val isFloatingBubbleEnabled by chatViewModel.isFloatingBubbleEnabled.collectAsStateWithLifecycle()
@@ -112,6 +119,7 @@ fun ChatApp(chatViewModel: ChatViewModel = viewModel()) {
       ConversationsScreen(
         conversations = conversations,
         contacts = contacts,
+        storyGroups = userStories,
         searchQuery = searchQuery,
         selectedFilter = selectedFilter,
         onSearchQueryChanged = chatViewModel::onSearchQueryChanged,
@@ -119,6 +127,8 @@ fun ChatApp(chatViewModel: ChatViewModel = viewModel()) {
         onConversationClick = chatViewModel::selectConversation,
         onStartNewChat = chatViewModel::openNewChatDialog,
         onContactQuickClick = chatViewModel::startChatWithContact,
+        onStoryClick = chatViewModel::openStoryViewer,
+        onCreateStoryClick = chatViewModel::openCreateStoryDialog,
         onTogglePin = chatViewModel::togglePin,
         onDeleteConversation = chatViewModel::deleteConversation,
         onToggleFloatingBubble = chatViewModel::toggleFloatingBubble,
@@ -137,6 +147,7 @@ fun ChatApp(chatViewModel: ChatViewModel = viewModel()) {
     inputText = bubbleInputText,
     onInputTextChanged = chatViewModel::onBubbleInputTextChanged,
     onSendMessage = chatViewModel::sendBubbleMessage,
+    onSendSticker = chatViewModel::sendBubbleSticker,
     onToggleExpanded = chatViewModel::toggleFloatingBubbleExpanded,
     onCloseBubble = chatViewModel::closeFloatingBubble,
     onOpenFullScreen = { convId ->
@@ -145,6 +156,23 @@ fun ChatApp(chatViewModel: ChatViewModel = viewModel()) {
     },
     onSwitchConversation = chatViewModel::switchBubbleConversation
   )
+
+  // Instagram-style Story Viewer Modal
+  activeStoryGroup?.let { storyGroup ->
+    StoryViewerDialog(
+      storyGroup = storyGroup,
+      onClose = chatViewModel::closeStoryViewer,
+      onReply = chatViewModel::replyToStory
+    )
+  }
+
+  // Instagram-style Story Creator Dialog
+  if (showCreateStoryDialog) {
+    CreateStoryDialog(
+      onDismiss = chatViewModel::closeCreateStoryDialog,
+      onPublish = chatViewModel::publishStory
+    )
+  }
 
   if (showNewChatDialog) {
     NewChatBottomSheet(

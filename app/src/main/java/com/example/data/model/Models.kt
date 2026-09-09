@@ -18,8 +18,31 @@ enum class MessageStatus {
 enum class MessageType {
     TEXT,
     AUDIO,
-    IMAGE
+    IMAGE,
+    STICKER
 }
+
+data class Story(
+    val id: String,
+    val userId: String,
+    val userName: String,
+    val userAvatarColor: Long,
+    val bgGradients: List<Long>,
+    val caption: String,
+    val stickerText: String? = null,
+    val stickerEmoji: String? = null,
+    val timestamp: Long = System.currentTimeMillis(),
+    val isViewed: Boolean = false
+)
+
+data class UserStoryGroup(
+    val userId: String,
+    val userName: String,
+    val userAvatarColor: Long,
+    val isMe: Boolean = false,
+    val stories: List<Story> = emptyList(),
+    val hasUnviewed: Boolean = true
+)
 
 @Entity(tableName = "conversations")
 data class Conversation(
